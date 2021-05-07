@@ -1,6 +1,4 @@
 import pandas as pd
-import os
-import glob
 #import psycopg2
 from secrete import conn_string_secrete
 
@@ -11,88 +9,45 @@ an input file with Chattermill IDS. You only need to specify the location of the
 Input file needs to have 'response_id' column 
 """
 
-
-def two_dfs_simple(df_new, df_db, col_names, enrichment = True):
-    
-    df_final = pd.merge(df_new, df_db, on=[col_names[0]]) 
-                  
-    if not enrichment:
-        df_final = df_new[~df_new[col_names[0]].isin(df_db[col_names[0]])]
- 
-    return df_final
-
-
-
 def check_unique(df, col_name):
-
-    #duplicates = df.pivot_table(index=['Color','Shape'], aggfunc='size')
-
-    dupl = df.pivot_table(index=[col_name], aggfunc='size')
+    ''' check if values in a column are unique and count duplicates '''
+    dupl = df.pivot_table(index=col_name, aggfunc='size')
     
-    dupl = df.pivot_table(index=[col_name], aggfunc='size')
-    dup_num = (dupl > 1).sum()
+    dup_num = (dupl > 1).sum()  
+    dupl.to_csv('test.csv')
 
-    if df[col_name].is_unique:
-        msg = f'"{col_name}" field is unique.' 
+    if dup_num == 0:
+        msg = f'{col_name} field is unique.' 
     else: 
-        msg = f'"{col_name}" field is not unique ({dup_num} duplicates found). Add another field.'    
+        msg = f'{col_name} field is not unique ({dup_num} duplicates found). Add another field.'    
     return msg
 
-def check_unique_two_cols(df, col_names):
-    dups = df.pivot_table(index = col_names, aggfunc ='size')
-    
-    
 
+def compare_ids(df_new, df_db, col_names, enrichment = True):
+    ''' enrich dfs based on one column '''
+    
+    if len(col_names) == 1:
+        df_merged = pd.merge(df_new, df_db, on=col_names[0], how='outer', indicator=True)        
+    else:
+        df_merged = pd.merge(df_new, df_db, on=col_names, how='outer', indicator=True)
+        
+    if enrichment:
+        df_final = df_merged[df_merged['_merge'] =='both']
+    else:
+        df_final = df_merged[df_merged['_merge'] =='left_only']
+
+    return df_final   
 
 def discribe_result(df_final, df_new, df_db, col_names, enrichment):
+    ''' returns how many rows were mapped and count duplicates in the resultant file '''
+    dupl = df_final.pivot_table(index=col_names, aggfunc='size')
+    dup_num = (dupl > 1).sum()
     if enrichment:
-        msg = f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped. Missing {df_new.shape[0]-df_final.shape[0]}' 
+        msg = f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped; of those {dup_num} are duplicates. Missing {df_new.shape[0]-df_final.shape[0]}' 
     else:
-        msg = f"""{df_final.shape[0]} out of {df_new.shape[0]} rows are unique. """
+        msg = f'{df_final.shape[0]} out of {df_new.shape[0]} rows are not in our database; of those {dup_num} are duplicates.'
     return msg
 
-
-    
-def discribe_result2(df_final, df_new, df_db, col_names, enrichment):
-    message1 = f'{col_names[0]} field is unique' if (df_db[col_names[0]].is_unique) else f'{col_names[0]} field is not unique. Add another field.'   
-    message2 = f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped' * enrichment or f'{df_final.shape[0]} out of {df_new.shape[0]} rows are unique'  
-    return message1, message2
-
-def two_dfs(df_new, df_db, col_names, enrichment = True):
-    if enrichment:
-        df = pd.merge(df_new, df_db, on=[col_names[0]])                   
-    else:
-        existing_ids = df_db[col_names[0]].tolist()
-        df = df_new[~df[col_names[0]].isin(existing_ids)]  
-    return df
-
-def compare_ids(df_new, df_db, col_names,  enrichment = True):
-        
-    if len(col_names)==1: # if response ids are unique   
-        df_db = pd.DataFrame(df_db, columns = ['id', col_names[0]])         
-        df_new[col_names[0]] = df_new[col_names[0]].astype(str)
-        
-        if enrichment:
-            df_final= pd.merge(df_new, df_db, on=[col_names[0]])                   
-        else:
-            existing_ids = df_db[col_names[0]].tolist()
-            df_final = df_new[~df_new[col_names[0]].isin(existing_ids)]  
-    else:
-        df_new[col_names[0]] = df_new[col_names[0]].astype(str)
-        df_new[col_names[1]] = df_new[col_names[1]].astype(str)
-            
-        if enrichment:
-            df_final = pd.merge(df_new, df_db, on=[col_names[0], col_names[1]])      
-            
-        else:
-            existing_ids = df_db[col_names[0]].tolist()
-            existing_ids_2 = df_db[col_names[1]].tolist()     
-            df_1 = df_new[~df_new[col_names[0]].isin(existing_ids)]   
-            df_final = df_new[~df_new[col_names[1]].isin(existing_ids_2)]     
-
-    print('Response ids are unique' * (df_db[col_names[0]].is_unique) or 'Response ids are not unique. Add another field.')   
-    print(f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped' * enrichment or f'{df_final.shape[0]} out of {df_new.shape[0]} rows are unique')    
-    return df_final
 
 
 
