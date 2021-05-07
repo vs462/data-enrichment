@@ -22,22 +22,35 @@ def two_dfs_simple(df_new, df_db, col_names, enrichment = True):
     return df_final
 
 
+
 def check_unique(df, col_name):
-    if not (df[col_name].is_unique):
-        msg = f'{col_name} field is unique.' 
+
+    #duplicates = df.pivot_table(index=['Color','Shape'], aggfunc='size')
+
+    dupl = df.pivot_table(index=[col_name], aggfunc='size')
+    
+    dupl = df.pivot_table(index=[col_name], aggfunc='size')
+    dup_num = (dupl > 1).sum()
+
+    if df[col_name].is_unique:
+        msg = f'"{col_name}" field is unique.' 
     else: 
-        msg = f'{col_name} field is not unique. Add another field.'    
+        msg = f'"{col_name}" field is not unique ({dup_num} duplicates found). Add another field.'    
     return msg
 
-
+def check_unique_two_cols(df, col_names):
+    dups = df.pivot_table(index = col_names, aggfunc ='size')
+    
+    
 
 
 def discribe_result(df_final, df_new, df_db, col_names, enrichment):
     if enrichment:
-        msg = f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped. {df_new.shape[0]-df_final.shape[0]} were not.' 
+        msg = f'{df_final.shape[0]} out of {df_new.shape[0]} rows were mapped. Missing {df_new.shape[0]-df_final.shape[0]}' 
     else:
         msg = f"""{df_final.shape[0]} out of {df_new.shape[0]} rows are unique. """
     return msg
+
 
     
 def discribe_result2(df_final, df_new, df_db, col_names, enrichment):

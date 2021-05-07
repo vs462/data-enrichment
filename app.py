@@ -11,11 +11,8 @@ def initialise():
     st.markdown(' ## Choose tool', unsafe_allow_html=True)
     tool = st.radio("", ('Enrichment', 'Unique IDs'))
     enrichment = True if tool == 'Enrichment' else False  
-
-    st.markdown(' ## Add data', unsafe_allow_html=True) 
-    
-    col1, col2 = st.beta_columns(2)
-    
+    st.markdown(' ## Add data', unsafe_allow_html=True)     
+    col1, col2 = st.beta_columns(2)    
     analysed_col_name = 'analysed_col_name'
     
     with col1:
@@ -31,7 +28,7 @@ def initialise():
     col_names = ['analysed_col_name']
 
     if df_new is not None and df_existing is not None:
-        st.markdown(' ## running', unsafe_allow_html=True) 
+        st.markdown(' ### running...', unsafe_allow_html=True) 
         df_final = enr.two_dfs_simple(df_new, df_existing, col_names, enrichment = enrichment)
         #st.write(df_final, unsafe_allow_html=True)   
         
