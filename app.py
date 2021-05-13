@@ -7,7 +7,7 @@ import uploader
 
 st.set_page_config(layout="wide")
 st.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True) # make buttons display horizontally 
-#st.markdown('<style>' + open('styles.css').read() + '</style>', unsafe_allow_html=True)
+st.markdown('<style>' + open('styles.css').read() + '</style>', unsafe_allow_html=True)
 st.title('Map Data / Get Unique IDs tool')
             
 def initialise():  
