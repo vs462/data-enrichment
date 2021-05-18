@@ -3,27 +3,31 @@ import streamlit as st
 import enrichment_tool as enr
 import base64
 import uploader
-
+import SessionState
 
 st.set_page_config(layout="wide")
 st.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True) # make buttons display horizontally 
 st.markdown('<style>' + open('styles.css').read() + '</style>', unsafe_allow_html=True)
 st.title('Map Data / Get Unique IDs tool')
-            
+session_state = SessionState.get(col_number = 1)
+         
 def initialise():  
     st.markdown(' ## Choose tool', unsafe_allow_html=True)
     tool = st.radio("", ('Enrichment', 'Unique IDs'))
     st.markdown('<p class="sep-line"> </p>', unsafe_allow_html=True)
     enrichment = True if tool == 'Enrichment' else False  
-    st.markdown(' ## Add data', unsafe_allow_html=True)     
-    col_num = st.checkbox('Map on two columns')    
-    col1, col2 = st.beta_columns(2) 
-    col_names = ['analysed_col_name1', 'analysed_col_name2'] if col_num else ['analysed_col_name']
+    st.markdown(' ## Add data', unsafe_allow_html=True)  
     
+    st.markdown(session_state.col_number, unsafe_allow_html=True)     
+
+    col1, col2 = st.beta_columns([1,6]) 
+    col_num = col1.selectbox('Number of columns to map on', [i+1 for i in range(10)])
+    col_names = [f'analysed_col_name_{i}' for i in range(col_num)]
+    
+    col1, col2 = st.beta_columns(2) 
     with col1:
         df_new = uploader.uploader("New")
         analyse_df(df_new, "New", col_names)
-        
     with col2:
         df_existing = uploader.uploader("Existing")
         analyse_df(df_existing, "Existing", col_names)
@@ -44,33 +48,22 @@ def run_analysis(df_new, df_existing, col_names, enrichment):
         df_final.drop(columns=['_merge'], inplace = True)
         download_link(df_final, 'mapped_file.csv', 'Download file in csv')
         uploader.preview_df(df_final)
-
-
+    
 
 def analyse_df(df, name, col_names):
-    ''' let user select what columns to map on and checks for duplicates '''
-    analysed_col_name = col_names
-    
+    ''' let user select what columns to map on and checks for duplicates '''    
     if df is not None:
-        if len(col_names)== 1:
-            st.markdown('### Choose column to map from data', unsafe_allow_html=True)
-            cols = st.selectbox(f'Choose column to map from {name} data', (df.columns))        
-            warning = enr.check_unique(df, [cols]) 
-            st.markdown(warning, unsafe_allow_html=True)
-            df[analysed_col_name[0]] = df[cols].astype(str)
-        
-        else:
-            col1 = st.selectbox(f'Choose first column to map from {name} data', (df.columns))  
-            col2 = st.selectbox(f'Choose second column to map from {name} data', (df.columns))
-            warning = enr.check_unique(df, [col1, col2]) 
-            
-            st.markdown(warning, unsafe_allow_html=True)
-            df[analysed_col_name[0]] = df[col1].astype(str)
-            df[analysed_col_name[1]] = df[col2].astype(str)    
-            cols = [col1, col2]
+        cols_new = []        
+        for i, col in enumerate(col_names):  
+            chosen_col = st.selectbox(f'Choose column {i+1} to map from {name} data', (df.columns))
+            df[col] = df[chosen_col].astype(str)            
+            cols_new.append(chosen_col)
+           
+        warning = enr.check_unique(df, cols_new)
+        st.markdown(warning, unsafe_allow_html=True)
             
         if name == 'Existing':
-            df.drop(columns=cols, inplace = True)
+            df.drop(columns=cols_new, inplace = True)
         return df
     
 
@@ -84,3 +77,4 @@ def download_link(object_to_download, download_filename, download_link_text):
         st.markdown(tmp_download_link, unsafe_allow_html=True)
 
 initialise()
+
