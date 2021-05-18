@@ -17,16 +17,17 @@ def initialise():
     st.markdown('<p class="sep-line"> </p>', unsafe_allow_html=True)
     enrichment = True if tool == 'Enrichment' else False  
     st.markdown(' ## Add data', unsafe_allow_html=True)  
-    
     st.markdown(session_state.col_number, unsafe_allow_html=True)     
 
-    col1, col2 = st.beta_columns([1,6]) 
-    col_num = col1.selectbox('Number of columns to map on', [i+1 for i in range(10)])
-    col_names = [f'analysed_col_name_{i}' for i in range(col_num)]
+    # col1, col2 = st.beta_columns([1,6]) 
+    # col_num = col1.selectbox('Number of columns to map on', [i+1 for i in range(10)])
+    # col_names = [f'analysed_col_name_{i}' for i in range(col_num)]
     
     col1, col2 = st.beta_columns(2) 
     with col1:
         df_new = uploader.uploader("New")
+        col_num = col_number()
+        col_names = [f'analysed_col_name_{i}' for i in range(col_num)]
         analyse_df(df_new, "New", col_names)
     with col2:
         df_existing = uploader.uploader("Existing")
@@ -48,6 +49,15 @@ def run_analysis(df_new, df_existing, col_names, enrichment):
         df_final.drop(columns=['_merge'], inplace = True)
         download_link(df_final, 'mapped_file.csv', 'Download file in csv')
         uploader.preview_df(df_final)
+
+def col_number():
+
+    if st.button('add another field'):
+        session_state.col_number+=1
+    if session_state.col_number > 1:
+        if st.button('remove field'):
+            session_state.col_number-=1
+    return session_state.col_number
     
 
 def analyse_df(df, name, col_names):
@@ -77,4 +87,3 @@ def download_link(object_to_download, download_filename, download_link_text):
         st.markdown(tmp_download_link, unsafe_allow_html=True)
 
 initialise()
-
